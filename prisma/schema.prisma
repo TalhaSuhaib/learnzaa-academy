@@ -1,0 +1,165 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  STUDENT
+  TEACHER
+  ADMIN
+}
+
+enum TeacherStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum ClassStatus {
+  UPCOMING
+  LIVE
+  COMPLETED
+}
+
+enum RequestStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+}
+
+enum TeachingMode {
+  ONLINE
+  OFFLINE
+  HOME_TUTOR
+}
+
+model User {
+  id             String          @id @default(uuid())
+  name           String
+  email          String          @unique
+  phone          String          @unique
+  password       String
+  role           Role            @default(STUDENT)
+  image          String?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  studentProfile StudentProfile?
+  teacherProfile TeacherProfile?
+}
+
+model StudentProfile {
+  id            String         @id @default(uuid())
+  userId        String         @unique
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  className     String?
+  institution   String?
+  location      String?
+  tutorRequests TutorRequest[]
+  enrollments   Enrollment[]
+}
+
+model TeacherProfile {
+  id              String         @id @default(uuid())
+  userId          String         @unique
+  user            User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status          TeacherStatus  @default(PENDING)
+  qualification   String
+  institution     String
+  department      String
+  experienceYears Int
+  expectedFee     Float
+  teachingMode    TeachingMode
+  bio             String?
+  isVerifiedTutor Boolean        @default(false)
+  liveClasses     LiveClass[]
+  courses         Course[]
+  tutorRequests   TutorRequest[]
+}
+
+model Course {
+  id          String         @id @default(uuid())
+  title       String
+  slug        String         @unique
+  description String
+  thumbnail   String
+  price       Float
+  discount    Float          @default(0)
+  isFeatured  Boolean        @default(false)
+  teacherId   String
+  teacher     TeacherProfile @relation(fields: [teacherId], references: [id])
+  enrollments Enrollment[]
+  subjects    Subject[]
+  createdAt   DateTime       @default(now())
+}
+
+model Enrollment {
+  id        String         @id @default(uuid())
+  studentId String
+  student   StudentProfile @relation(fields: [studentId], references: [id])
+  courseId  String
+  course    Course         @relation(fields: [courseId], references: [id])
+  createdAt DateTime       @default(now())
+}
+
+model Subject {
+  id       String    @id @default(uuid())
+  name     String
+  courseId String?
+  course   Course?   @relation(fields: [courseId], references: [id])
+  chapters Chapter[]
+}
+
+model Chapter {
+  id        String  @id @default(uuid())
+  name      String
+  subjectId String
+  subject   Subject @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  topics    Topic[]
+}
+
+model Topic {
+  id          String      @id @default(uuid())
+  title       String
+  chapterId   String
+  chapter     Chapter     @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+  liveClasses LiveClass[]
+}
+
+model LiveClass {
+  id           String         @id @default(uuid())
+  title        String
+  topicId      String
+  topic        Topic          @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  teacherId    String
+  teacher      TeacherProfile @relation(fields: [teacherId], references: [id])
+  status       ClassStatus    @default(UPCOMING)
+  startTime    DateTime
+  endTime      DateTime
+  liveUrl      String?
+  recordingUrl String?
+  notesPdf     String?
+  createdAt    DateTime       @default(now())
+}
+
+model TutorRequest {
+  id        String         @id @default(uuid())
+  studentId String
+  student   StudentProfile @relation(fields: [studentId], references: [id])
+  tutorId   String
+  tutor     TeacherProfile @relation(fields: [tutorId], references: [id])
+  subject   String
+  budget    Float
+  status    RequestStatus  @default(PENDING)
+  createdAt DateTime       @default(now())
+}
+
+model DynamicContent {
+  id        String   @id @default(uuid())
+  key       String   @unique
+  value     String
+  updatedAt DateTime @updatedAt
+}
