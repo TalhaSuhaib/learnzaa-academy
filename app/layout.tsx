@@ -1,3 +1,5 @@
+import type { Metadata } from "next";
+
 export const metadata: Metadata = {
   title: "LearnZaa Academy",
   description: "Learn. Grow. Achieve.",
